@@ -3,7 +3,7 @@
 numpy.ma : a package to handle missing or invalid values.
 
 This package was initially written for numarray by Paul F. Dubois
-at Lawrence Livermore National Laboratory. 
+at Lawrence Livermore National Laboratory.
 In 2006, the package was completely rewritten by Pierre Gerard-Marchant
 (University of Georgia) to make the MaskedArray class a subclass of ndarray,
 and to improve support of structured arrays.
@@ -12,7 +12,7 @@ and to improve support of structured arrays.
 Copyright 1999, 2000, 2001 Regents of the University of California.
 Released for unlimited redistribution.
 * Adapted for numpy_core 2005 by Travis Oliphant and (mainly) Paul Dubois.
-* Subclassing of the base ndarray 2006 by Pierre Gerard-Marchant 
+* Subclassing of the base ndarray 2006 by Pierre Gerard-Marchant
   (pgmdevlist_AT_gmail_DOT_com)
 * Improvements suggested by Reggie Dugard (reggie_AT_merfinllc_DOT_com)
 
@@ -483,7 +483,10 @@ def getdata(a, subok=True):
            [3, 4]])
 
     """
-    data = getattr(a, '_data', np.array(a, subok=subok))
+    try:
+        data = getattr(a, '_data')
+    except AttributeError:
+        data = np.array(a, copy=False, subok=subok)
     if not subok:
         return data.view(ndarray)
     return data
@@ -2843,7 +2846,7 @@ class MaskedArray(ndarray):
 
     baseclass = property(fget= lambda self:self._baseclass,
                          doc="Class of the underlying data (read-only).")
-    
+
     def _get_data(self):
         """Return the current data, as a view of the original
         underlying data.
