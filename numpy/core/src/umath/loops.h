@@ -1,6 +1,9 @@
 #ifndef _NPY_UMATH_LOOPS_H_
 #define _NPY_UMATH_LOOPS_H_
 
+#include "loopsm.h"
+
+
 #define BOOL_invert BOOL_logical_not
 #define BOOL_negative BOOL_logical_not
 #define BOOL_add BOOL_logical_or

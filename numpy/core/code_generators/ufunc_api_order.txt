@@ -32,3 +32,14 @@ PyUFunc_getfperr
 PyUFunc_handlefperr
 PyUFunc_ReplaceLoopBySignature
 PyUFunc_FromFuncAndDataAndSignature
+PyUFunc_ff_f_As_dd_d_m
+PyUFunc_ff_f_m
+PyUFunc_dd_d_m
+PyUFunc_gg_g_m
+PyUFunc_FF_F_As_DD_D_m
+PyUFunc_DD_D_m
+PyUFunc_FF_F_m
+PyUFunc_GG_G_m
+PyUFunc_OO_O_m
+PyUFunc_OO_O_method_m
+

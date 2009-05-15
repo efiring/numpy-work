@@ -18,8 +18,9 @@ class TypeDescription(object):
     func_data:
     in_:
     out:
+    mask:
     """
-    def __init__(self, type, f=None, in_=None, out=None):
+    def __init__(self, type, f=None, in_=None, out=None, mask=0):
         self.type = type
         self.func_data = f
         if in_ is not None:
@@ -28,11 +29,14 @@ class TypeDescription(object):
         if out is not None:
             out = out.replace('.', type)
         self.out = out
+        self.mask = mask
 
     def finish_signature(self, nin, nout):
         if self.in_ is None:
             self.in_ = self.type * nin
         assert len(self.in_) == nin
+        if self.mask:
+            self.in_ = self.in_[:-self.mask] + '?' * self.mask
         if self.out is None:
             self.out = self.type * nout
         assert len(self.out) == nout
@@ -46,7 +50,7 @@ def build_func_data(types, f):
         func_data.append(d)
     return func_data
 
-def TD(types, f=None, in_=None, out=None):
+def TD(types, f=None, in_=None, out=None, mask=0):
     if f is not None:
         if isinstance(f, str):
             func_data = build_func_data(types, f)
@@ -65,7 +69,7 @@ def TD(types, f=None, in_=None, out=None):
         out = (None,) * len(types)
     tds = []
     for t, fd, i, o in zip(types, func_data, in_, out):
-        tds.append(TypeDescription(t, f=fd, in_=i, out=o))
+        tds.append(TypeDescription(t, f=fd, in_=i, out=o, mask=mask))
     return tds
 
 class Ufunc(object):
@@ -179,6 +183,33 @@ defdict = {
           TD(intfltcmplx),
           TD(O, f='PyNumber_Divide'),
           ),
+
+'add_m' :
+    Ufunc(3, 1, Zero,
+          docstrings.get('numpy.core.umath.add'),
+          TD(noobj, mask=1),
+          TD(O, f='PyNumber_Add', mask=1),
+          ),
+'subtract_m' :
+    Ufunc(3, 1, Zero,
+          docstrings.get('numpy.core.umath.subtract'),
+          TD(noobj, mask=1),
+          TD(O, f='PyNumber_Subtract', mask=1),
+          ),
+'multiply_m' :
+    Ufunc(3, 1, One,
+          docstrings.get('numpy.core.umath.multiply'),
+          TD(noobj, mask=1),
+          TD(O, f='PyNumber_Multiply', mask=1),
+          ),
+'divide_m' :
+    Ufunc(3, 1, One,
+          docstrings.get('numpy.core.umath.divide'),
+          TD(intfltcmplx, mask=1),
+          TD(O, f='PyNumber_Divide', mask=1),
+          ),
+
+
 'floor_divide' :
     Ufunc(2, 1, One,
           docstrings.get('numpy.core.umath.floor_divide'),
@@ -286,6 +317,12 @@ defdict = {
           TD(noobj, out='?'),
           TD(M, f='logical_and'),
           ),
+'logical_and_m' :
+    Ufunc(3, 1, One,
+          docstrings.get('numpy.core.umath.logical_and'),
+          TD(noobj, out='?', mask=1),
+          TD(M, f='logical_and', mask=1),
+          ),
 'logical_not' :
     Ufunc(1, 1, None,
           docstrings.get('numpy.core.umath.logical_not'),
@@ -297,6 +334,12 @@ defdict = {
           docstrings.get('numpy.core.umath.logical_or'),
           TD(noobj, out='?'),
           TD(M, f='logical_or'),
+          ),
+'logical_or_m' :
+    Ufunc(3, 1, Zero,
+          docstrings.get('numpy.core.umath.logical_or'),
+          TD(noobj, out='?', mask=1),
+          TD(M, f='logical_or', mask=1),
           ),
 'logical_xor' :
     Ufunc(2, 1, None,
@@ -589,6 +632,198 @@ defdict = {
           ),
 }
 
+
+defdict_m = {
+'add_m' :
+    Ufunc(3, 1, Zero,
+          docstrings.get('numpy.core.umath.add'),
+          TD(noobj, mask=1),
+          TD(O, f='PyNumber_Add', mask=1),
+          ),
+'subtract_m' :
+    Ufunc(3, 1, Zero,
+          docstrings.get('numpy.core.umath.subtract'),
+          TD(noobj, mask=1),
+          TD(O, f='PyNumber_Subtract', mask=1),
+          ),
+'multiply_m' :
+    Ufunc(3, 1, One,
+          docstrings.get('numpy.core.umath.multiply'),
+          TD(noobj, mask=1),
+          TD(O, f='PyNumber_Multiply', mask=1),
+          ),
+'divide_m' :
+    Ufunc(3, 1, One,
+          docstrings.get('numpy.core.umath.divide'),
+          TD(intfltcmplx, mask=1),
+          TD(O, f='PyNumber_Divide', mask=1),
+          ),
+
+
+'floor_divide_m' :
+    Ufunc(3, 1, One,
+          docstrings.get('numpy.core.umath.floor_divide'),
+          TD(intfltcmplx, mask=1),
+          TD(O, f='PyNumber_FloorDivide', mask=1),
+          ),
+'true_divide_m' :
+    Ufunc(3, 1, One,
+          docstrings.get('numpy.core.umath.true_divide'),
+          TD('bBhH', out='f', mask=1),
+          TD('iIlLqQ', out='d', mask=1),
+          TD(flts+cmplx, mask=1),
+          TD(O, f='PyNumber_TrueDivide', mask=1),
+          ),
+'fmod_m' :
+    Ufunc(3, 1, Zero,
+          docstrings.get('numpy.core.umath.fmod'),
+          TD(ints, mask=1),
+          TD(flts, f='fmod', mask=1),
+          TD(M, f='fmod', mask=1),
+          ),
+'power_m' :
+    Ufunc(3, 1, One,
+          docstrings.get('numpy.core.umath.power'),
+          TD(ints, mask=1),
+          TD(inexact, f='pow', mask=1),
+          TD(O, f='npy_ObjectPower', mask=1),
+          ),
+'greater_m' :
+    Ufunc(3, 1, None,
+          docstrings.get('numpy.core.umath.greater'),
+          TD(all, out='?', mask=1),
+          ),
+'greater_equal_m' :
+    Ufunc(3, 1, None,
+          docstrings.get('numpy.core.umath.greater_equal'),
+          TD(all, out='?', mask=1),
+          ),
+'less_m' :
+    Ufunc(3, 1, None,
+          docstrings.get('numpy.core.umath.less'),
+          TD(all, out='?', mask=1),
+          ),
+'less_equal_m' :
+    Ufunc(3, 1, None,
+          docstrings.get('numpy.core.umath.less_equal'),
+          TD(all, out='?', mask=1),
+          ),
+'equal_m' :
+    Ufunc(3, 1, None,
+          docstrings.get('numpy.core.umath.equal'),
+          TD(all, out='?', mask=1),
+          ),
+'not_equal_m' :
+    Ufunc(3, 1, None,
+          docstrings.get('numpy.core.umath.not_equal'),
+          TD(all, out='?', mask=1),
+          ),
+'logical_and_m' :
+    Ufunc(3, 1, One,
+          docstrings.get('numpy.core.umath.logical_and'),
+          TD(noobj, out='?', mask=1),
+          TD(M, f='logical_and', mask=1),
+          ),
+'logical_or_m' :
+    Ufunc(3, 1, Zero,
+          docstrings.get('numpy.core.umath.logical_or'),
+          TD(noobj, out='?', mask=1),
+          TD(M, f='logical_or', mask=1),
+          ),
+'logical_xor_m' :
+    Ufunc(3, 1, None,
+          docstrings.get('numpy.core.umath.logical_xor'),
+          TD(noobj, out='?', mask=1),
+          TD(M, f='logical_xor', mask=1),
+          ),
+'maximum_m' :
+    Ufunc(3, 1, None,
+          docstrings.get('numpy.core.umath.maximum'),
+          TD(noobj, mask=1),
+          TD(O, f='npy_ObjectMax', mask=1)
+          ),
+'minimum_m' :
+    Ufunc(3, 1, None,
+          docstrings.get('numpy.core.umath.minimum'),
+          TD(noobj, mask=1),
+          TD(O, f='npy_ObjectMin', mask=1)
+          ),
+'fmax_m' :
+    Ufunc(3, 1, None,
+          docstrings.get('numpy.core.umath.fmax'),
+          TD(noobj, mask=1),
+          TD(O, f='npy_ObjectMax', mask=1)
+          ),
+'fmin_m' :
+    Ufunc(3, 1, None,
+          docstrings.get('numpy.core.umath.fmin'),
+          TD(noobj, mask=1),
+          TD(O, f='npy_ObjectMin', mask=1)
+          ),
+'logaddexp_m' :
+    Ufunc(3, 1, None,
+          docstrings.get('numpy.core.umath.logaddexp'),
+          TD(flts, f="logaddexp", mask=1)
+          ),
+'logaddexp2_m' :
+    Ufunc(3, 1, None,
+          docstrings.get('numpy.core.umath.logaddexp2'),
+          TD(flts, f="logaddexp2", mask=1)
+          ),
+'bitwise_and_m' :
+    Ufunc(3, 1, One,
+          docstrings.get('numpy.core.umath.bitwise_and'),
+          TD(bints, mask=1),
+          TD(O, f='PyNumber_And', mask=1),
+          ),
+'bitwise_or_m' :
+    Ufunc(3, 1, Zero,
+          docstrings.get('numpy.core.umath.bitwise_or'),
+          TD(bints, mask=1),
+          TD(O, f='PyNumber_Or', mask=1),
+          ),
+'bitwise_xor_m' :
+    Ufunc(3, 1, None,
+          docstrings.get('numpy.core.umath.bitwise_xor'),
+          TD(bints, mask=1),
+          TD(O, f='PyNumber_Xor', mask=1),
+          ),
+'left_shift_m' :
+    Ufunc(3, 1, None,
+          docstrings.get('numpy.core.umath.left_shift'),
+          TD(ints, mask=1),
+          TD(O, f='PyNumber_Lshift', mask=1),
+          ),
+'right_shift_m' :
+    Ufunc(3, 1, None,
+          docstrings.get('numpy.core.umath.right_shift'),
+          TD(ints, mask=1),
+          TD(O, f='PyNumber_Rshift', mask=1),
+          ),
+'arctan2_m' :
+    Ufunc(3, 1, None,
+          docstrings.get('numpy.core.umath.arctan2'),
+          TD(flts, f='atan2', mask=1),
+          TD(M, f='arctan2', mask=1),
+          ),
+'remainder_m' :
+    Ufunc(3, 1, None,
+          docstrings.get('numpy.core.umath.remainder'),
+          TD(intflt, mask=1),
+          TD(O, f='PyNumber_Remainder', mask=1),
+          ),
+'hypot_m' :
+    Ufunc(3, 1, None,
+          docstrings.get('numpy.core.umath.hypot'),
+          TD(flts, f='hypot', mask=1),
+          TD(M, f='hypot', mask=1),
+          ),
+}
+
+defdict.update(defdict_m)
+
+
+
 def indent(st,spaces):
     indention = ' '*spaces
     indented = indention + st.replace('\n','\n'+indention)
@@ -613,6 +848,18 @@ chartotype2 = {'f': 'ff_f',
                'G': 'GG_G',
                'O': 'OO_O',
                'M': 'OO_O_method'}
+
+chartotype3 = {'f': 'ff_f_m',
+               'd': 'dd_d_m',
+               'g': 'gg_g_m',
+               'F': 'FF_F_m',
+               'D': 'DD_D_m',
+               'G': 'GG_G_m',
+               'O': 'OO_O_m',
+               'M': 'OO_O_method_m'}
+
+
+
 #for each name
 # 1) create functions, data, and signature
 # 2) fill in functions and data in InitOperators
@@ -667,11 +914,7 @@ def make_arrays(funcdict):
         k = 0
         sub = 0
 
-        if uf.nin > 1:
-            assert uf.nin == 2
-            thedict = chartotype2  # two inputs and one output
-        else:
-            thedict = chartotype1  # one input and one output
+        thedict = {1:chartotype1, 2:chartotype2, 3:chartotype3}[uf.nin]
 
         for t in uf.type_descriptions:
             if t.func_data is not None:
